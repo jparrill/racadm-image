@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 set -euoE pipefail
 
+DELETE=""
+
 usage() 	{
 	echo "${@}"
 	echo "Usage: $0 [-d] -r idrac-hostname -u user -p password -i http://iso-url" 1>&2; 
@@ -35,15 +37,15 @@ echo USER = $USER
 echo PASSWORD = $PASSWORD
 echo ISO_URL = $ISO_URL
 
-if [ $DELETE ]; then
-echo '******* Initializing virtual disk to ensure clean boot to ISO'
-/opt/dell/srvadmin/bin/idracadm7 -r $HOST -u $USER -p $PASSWORD storage init:Disk.Virtual.0:RAID.Integrated.1-1 -speed fast 
-/opt/dell/srvadmin/bin/idracadm7 -r $HOST -u $USER -p $PASSWORD jobqueue create RAID.Integrated.1-1 -s TIME_NOW 
-
+if [[ ! -z $DELETE ]]; then
+    echo '******* Initializing virtual disk to ensure clean boot to ISO'
+    /opt/dell/srvadmin/bin/idracadm7 -r $HOST -u $USER -p $PASSWORD storage init:Disk.Virtual.0:RAID.Integrated.1-1 -speed fast 
+    /opt/dell/srvadmin/bin/idracadm7 -r $HOST -u $USER -p $PASSWORD jobqueue create RAID.Integrated.1-1 -s TIME_NOW 
 fi
 
-if ! curl --output /dev/null --silent --head --fail "$ISO_URL"; then
-	  usage "******* ISO does not exist in the provided url: $ISO_URL"
+if [[ ! $(curl --head --fail $ISO_URL) ]]
+then
+    usage "******* ISO does not exist in the provided url: $ISO_URL"
 fi
 
 echo '******* Disconnecting existing image (just in case)'
